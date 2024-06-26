@@ -1,94 +1,78 @@
-let form = document.getElementById("form");
-let textInput = document.getElementById("textInput");
-let dateInput = document.getElementById("dateInput");
-let textarea = document.getElementById("textarea");
-let msg = document.getElementById("msg");
-let tasks = document.getElementById("tasks");
-let add = document.getElementById("add");
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('todo-form');
+  const titleInput = document.getElementById('title');
+  const dueDateInput = document.getElementById('due-date');
+  const descriptionInput = document.getElementById('description');
+  const indexInput = document.getElementById('index');
+  const tbody = document.querySelector('#todo-table tbody');
 
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  formValidation();
+  let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+  const saveTodos = () => {
+      localStorage.setItem('todos', JSON.stringify(todos));
+  };
+
+  const renderTable = () => {
+      tbody.innerHTML = '';
+      todos.forEach((todo, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+              <td>${todo.title}</td>
+              <td>${todo.dueDate}</td>
+              <td>${todo.description}</td>
+              <td class="actions">
+                  <button class="edit" data-index="${index}"><i class="fas fa-edit"></i></button>
+                  <button class="delete" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
+              </td>
+          `;
+          tbody.appendChild(tr);
+      });
+  };
+
+  const handleSubmit = (e) => {
+      e.preventDefault();
+      const title = titleInput.value;
+      const dueDate = dueDateInput.value;
+      const description = descriptionInput.value;
+      const index = indexInput.value;
+
+      if (index === '') {
+          todos.push({ title, dueDate, description });
+      } else {
+          todos[index] = { title, dueDate, description };
+      }
+
+      titleInput.value = '';
+      dueDateInput.value = '';
+      descriptionInput.value = '';
+      indexInput.value = '';
+      saveTodos();
+      renderTable();
+  };
+
+  const handleEdit = (index) => {
+      const todo = todos[index];
+      titleInput.value = todo.title;
+      dueDateInput.value = todo.dueDate;
+      descriptionInput.value = todo.description;
+      indexInput.value = index;
+  };
+
+  const handleDelete = (index) => {
+      todos.splice(index, 1);
+      saveTodos();
+      renderTable();
+  };
+
+  form.addEventListener('submit', handleSubmit);
+
+  tbody.addEventListener('click', (e) => {
+      if (e.target.closest('.edit')) {
+          handleEdit(e.target.closest('.edit').dataset.index);
+      } else if (e.target.closest('.delete')) {
+          handleDelete(e.target.closest('.delete').dataset.index);
+      }
+  });
+
+  renderTable();
 });
-
-let formValidation = () => {
-  if (textInput.value === "") {
-    console.log("failure");
-    msg.innerHTML = "Task cannot be blank";
-  } else {
-    console.log("success");
-    msg.innerHTML = "";
-    acceptData();
-    add.setAttribute("data-bs-dismiss", "modal");
-    add.click();
-
-    (() => {
-      add.setAttribute("data-bs-dismiss", "");
-    })();
-  }
-};
-
-let data = [{}];
-
-let acceptData = () => {
-  data.push({
-    text: textInput.value,
-    date: dateInput.value,
-    description: textarea.value,
-  });
-
-  localStorage.setItem("data", JSON.stringify(data));
-
-  console.log(data);
-  createTasks();
-};
-
-let createTasks = () => {
-  tasks.innerHTML = "";
-  data.map((x, y) => {
-    return (tasks.innerHTML += `
-    <div id=${y}>
-          <span class="fw-bold">${x.text}</span>
-          <span class="small text-secondary">${x.date}</span>
-          <p>${x.description}</p>
-  
-          <span class="options">
-            <i onClick= "editTask(this)" data-bs-toggle="modal" data-bs-target="#form" class="fas fa-edit"></i>
-            <i onClick ="deleteTask(this);createTasks()" class="fas fa-trash-alt"></i>
-          </span>
-        </div>
-    `);
-  });
-
-  resetForm();
-};
-
-let deleteTask = (e) => {
-  e.parentElement.parentElement.remove();
-  data.splice(e.parentElement.parentElement.id, 1);
-  localStorage.setItem("data", JSON.stringify(data));
-  console.log(data);
-  
-};
-
-let editTask = (e) => {
-  let selectedTask = e.parentElement.parentElement;
-
-  textInput.value = selectedTask.children[0].innerHTML;
-  dateInput.value = selectedTask.children[1].innerHTML;
-  textarea.value = selectedTask.children[2].innerHTML;
-
-  deleteTask(e);
-};
-
-let resetForm = () => {
-  textInput.value = "";
-  dateInput.value = "";
-  textarea.value = "";
-};
-
-(() => {
-  data = JSON.parse(localStorage.getItem("data")) || []
-  console.log(data);
-  createTasks();
-})();
